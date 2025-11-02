@@ -1,16 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/SubjectCard";
-import { LogOut, BookOpen } from "lucide-react";
+import { LogOut, BookOpen, Home } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { Subject } from "@shared/schema";
 
 interface UserDashboardProps {
   onSubjectClick: (subjectId: string, subjectName: string) => void;
   onResourcesClick: () => void;
   onLogout: () => void;
+  onHome?: () => void;
 }
 
-export default function UserDashboard({ onSubjectClick, onResourcesClick, onLogout }: UserDashboardProps) {
+export default function UserDashboard({ onSubjectClick, onResourcesClick, onLogout, onHome }: UserDashboardProps) {
   const { data: subjects = [], isLoading } = useQuery<Subject[]>({
     queryKey: ['/api/subjects'],
   });
@@ -24,6 +26,12 @@ export default function UserDashboard({ onSubjectClick, onResourcesClick, onLogo
             <p className="text-sm text-muted-foreground">Learning Platform</p>
           </div>
           <div className="flex items-center gap-2">
+            {onHome && (
+              <Button variant="ghost" onClick={onHome} data-testid="button-home">
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+            )}
             <Button variant="ghost" onClick={onResourcesClick} data-testid="button-resources">
               <BookOpen className="w-4 h-4 mr-2" />
               Resources
@@ -32,6 +40,7 @@ export default function UserDashboard({ onSubjectClick, onResourcesClick, onLogo
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
+            <ThemeToggle />
           </div>
         </div>
       </header>

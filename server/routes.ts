@@ -14,6 +14,9 @@ import {
   insertContentSchema,
   insertQuizQuestionSchema,
   insertResourceSchema,
+  insertPlanSchema,
+  insertSettingsSchema,
+  insertUpdateSchema,
 } from "@shared/schema";
 
 declare module 'express-session' {
@@ -67,6 +70,7 @@ const upload = multer({
     }
   }
 });
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
@@ -174,6 +178,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  app.put('/api/admin/profile', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { username, currentPassword, newPassword } = req.body;
+      const adminUser = storage.getUser(req.session.userId!);
+      
+      if (!adminUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      if (newPassword) {
+        if (!currentPassword) {
+          return res.status(400).json({ error: 'Current password required' });
+        }
+        
+        const isValid = await bcrypt.compare(currentPassword, adminUser.password);
+        if (!isValid) {
+          return res.status(401).json({ error: 'Current password incorrect' });
+        }
+        
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        storage.updateUser(adminUser.id, { 
+          username: username || adminUser.username, 
+          password: hashedPassword 
+        });
+      } else if (username && username !== adminUser.username) {
+        storage.updateUser(adminUser.id, { username });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get('/api/admin/users', isAuthenticated, isAdmin, (req, res) => {
     const users = storage.getAllUsers().map(u => ({
       id: u.id,
@@ -219,42 +257,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
-  app.put('/api/admin/settings', isAuthenticated, isAdmin, async (req, res) => {
+  app.put('/api/admin/settings', isAuthenticated, isAdmin, (req, res) => {
     try {
-      const { username, currentPassword, newPassword } = req.body;
-      const user = storage.getUser(req.session.userId!);
-
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      if (newPassword) {
-        if (!currentPassword) {
-          return res.status(400).json({ error: 'Current password required' });
-        }
-
-        const isValid = await bcrypt.compare(currentPassword, user.password);
-        if (!isValid) {
-          return res.status(401).json({ error: 'Invalid current password' });
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        storage.updateUser(user.id, {
-          username: username || user.username,
-          password: hashedPassword,
-          validUntil: user.validUntil,
-          isAdmin: user.isAdmin,
-        });
-      } else if (username && username !== user.username) {
-        storage.updateUser(user.id, {
-          username,
-          password: user.password,
-          validUntil: user.validUntil,
-          isAdmin: user.isAdmin,
-        });
-      }
-
-      res.json({ success: true });
+      const data = insertSettingsSchema.parse(req.body);
+      const settings = storage.updateSettings(data);
+      res.json(settings);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -460,6 +467,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/resources', isAuthenticated, (req, res) => {
     const resources = storage.getAllResources();
     res.json(resources);
+  });
+
+  // Plan routes (public)
+  app.get('/api/plans', (req, res) => {
+    const plans = storage.getAllPlans();
+    res.json(plans);
+  });
+
+  // Admin plan routes
+  app.get('/api/admin/plans', isAuthenticated, isAdmin, (req, res) => {
+    const plans = storage.getAllPlans();
+    res.json(plans);
+  });
+
+  app.put('/api/admin/plans/:id', isAuthenticated, isAdmin, (req, res) => {
+    try {
+      const data = insertPlanSchema.partial().parse(req.body);
+      const plan = storage.updatePlan(req.params.id, data);
+      if (!plan) {
+        return res.status(404).json({ error: 'Plan not found' });
+      }
+      res.json(plan);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Settings routes (public get)
+  app.get('/api/settings', (req, res) => {
+    const settings = storage.getSettings();
+    res.json(settings || { supportEmail: 'support@archer.com' });
+  });
+
+  // Admin settings routes
+  app.get('/api/admin/settings', isAuthenticated, isAdmin, (req, res) => {
+    const settings = storage.getSettings();
+    res.json(settings || { supportEmail: 'support@archer.com' });
+  });
+
+  app.put('/api/admin/settings', isAuthenticated, isAdmin, (req, res) => {
+    try {
+      const data = insertSettingsSchema.parse(req.body);
+      const settings = storage.updateSettings(data);
+      res.json(settings);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Updates routes (public get)
+  app.get('/api/updates', (req, res) => {
+    const updates = storage.getAllUpdates();
+    res.json(updates);
+  });
+
+  // Admin updates routes
+  app.get('/api/admin/updates', isAuthenticated, isAdmin, (req, res) => {
+    const updates = storage.getAllUpdates();
+    res.json(updates);
+  });
+
+  app.post('/api/admin/updates', isAuthenticated, isAdmin, (req, res) => {
+    try {
+      const data = insertUpdateSchema.parse(req.body);
+      const update = storage.createUpdate(data);
+      res.json(update);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete('/api/admin/updates/:id', isAuthenticated, isAdmin, (req, res) => {
+    const success = storage.deleteUpdate(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: 'Update not found' });
+    }
+    res.json({ success: true });
   });
 
   const httpServer = createServer(app);

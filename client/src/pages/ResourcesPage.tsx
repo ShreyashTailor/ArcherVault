@@ -3,15 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BookOpen, FileText, StickyNote, ExternalLink, Eye } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, StickyNote, ExternalLink, Eye, Home } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import PdfViewer from "@/components/PdfViewer";
 import type { Resource } from "@shared/schema";
 
 interface ResourcesPageProps {
   onBack: () => void;
+  onHome?: () => void;
 }
 
-export default function ResourcesPage({ onBack }: ResourcesPageProps) {
+export default function ResourcesPage({ onBack, onHome }: ResourcesPageProps) {
   const [viewingPdf, setViewingPdf] = useState<Resource | null>(null);
   
   const { data: resources = [], isLoading } = useQuery<Resource[]>({
@@ -60,18 +62,29 @@ export default function ResourcesPage({ onBack }: ResourcesPageProps) {
     return (
       <div className="min-h-screen bg-background">
         <header className="backdrop-blur-xl bg-white/80 dark:bg-black/40 border-b border-border sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleBackFromPdf}
-              data-testid="button-back-from-pdf"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-semibold">{viewingPdf.title}</h1>
-              <p className="text-sm text-muted-foreground">PDF Viewer</p>
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBackFromPdf}
+                data-testid="button-back-from-pdf"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-semibold">{viewingPdf.title}</h1>
+                <p className="text-sm text-muted-foreground">PDF Viewer</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {onHome && (
+                <Button variant="ghost" onClick={onHome} data-testid="button-home">
+                  <Home className="w-4 h-4 mr-2" />
+                  Home
+                </Button>
+              )}
+              <ThemeToggle />
             </div>
           </div>
         </header>
@@ -85,18 +98,29 @@ export default function ResourcesPage({ onBack }: ResourcesPageProps) {
   return (
     <div className="min-h-screen bg-background">
       <header className="backdrop-blur-xl bg-white/80 dark:bg-black/40 border-b border-border sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            data-testid="button-back"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold">Resources</h1>
-            <p className="text-sm text-muted-foreground">Books, PDFs, and Study Notes</p>
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBack}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-semibold">Resources</h1>
+              <p className="text-sm text-muted-foreground">Books, PDFs, and Study Notes</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {onHome && (
+              <Button variant="ghost" onClick={onHome} data-testid="button-home">
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+            )}
+            <ThemeToggle />
           </div>
         </div>
       </header>

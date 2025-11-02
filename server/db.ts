@@ -55,6 +55,27 @@ db.exec(`
     type TEXT NOT NULL,
     category TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS plans (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    durationMonths INTEGER NOT NULL,
+    price INTEGER NOT NULL,
+    razorpayLink TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    id TEXT PRIMARY KEY,
+    supportEmail TEXT NOT NULL,
+    updatedAt TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS updates (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    createdAt TEXT NOT NULL
+  );
 `);
 
 async function seedAdmin() {
@@ -69,6 +90,34 @@ async function seedAdmin() {
     `).run(id, 'admin', hashedPassword, '2099-12-31', 1);
     
     console.log('Admin user seeded successfully');
+  }
+
+  const existingPlans = db.prepare('SELECT COUNT(*) as count FROM plans').get() as { count: number };
+  if (existingPlans.count === 0) {
+    const plans = [
+      { id: randomUUID(), name: '1 Month Plan', durationMonths: 1, price: 500, razorpayLink: 'https://razorpay.me/@yourbusiness' },
+      { id: randomUUID(), name: '6 Months Plan', durationMonths: 6, price: 2000, razorpayLink: 'https://razorpay.me/@yourbusiness' },
+      { id: randomUUID(), name: '1 Year Plan', durationMonths: 12, price: 3000, razorpayLink: 'https://razorpay.me/@yourbusiness' }
+    ];
+    
+    const insertPlan = db.prepare(`
+      INSERT INTO plans (id, name, durationMonths, price, razorpayLink)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    
+    for (const plan of plans) {
+      insertPlan.run(plan.id, plan.name, plan.durationMonths, plan.price, plan.razorpayLink);
+    }
+    
+    console.log('Plans seeded successfully');
+  }
+
+  const existingSettings = db.prepare('SELECT * FROM settings LIMIT 1').get();
+  if (!existingSettings) {
+    const id = randomUUID();
+    db.prepare('INSERT INTO settings (id, supportEmail, updatedAt) VALUES (?, ?, ?)')
+      .run(id, 'support@archer.com', new Date().toISOString());
+    console.log('Settings seeded successfully');
   }
 }
 

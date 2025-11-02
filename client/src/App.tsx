@@ -3,13 +3,15 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import LandingPage from "@/pages/LandingPage";
 import LoginForm from "@/components/LoginForm";
 import UserDashboard from "@/pages/UserDashboard";
 import ChapterContent from "@/pages/ChapterContent";
 import AdminDashboard from "@/pages/AdminDashboard";
 import ResourcesPage from "@/pages/ResourcesPage";
 
-type View = 'login' | 'user-dashboard' | 'chapter-content' | 'admin-dashboard' | 'resources';
+type View = 'landing' | 'login' | 'user-dashboard' | 'chapter-content' | 'admin-dashboard' | 'resources';
 
 interface CurrentUser {
   id: string;
@@ -19,7 +21,7 @@ interface CurrentUser {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('login');
+  const [currentView, setCurrentView] = useState<View>('landing');
   const [selectedSubject, setSelectedSubject] = useState<{ id: string; name: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,6 +90,10 @@ function App() {
     setCurrentView('user-dashboard');
   };
 
+  const handleGoHome = () => {
+    setCurrentView('landing');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -98,37 +104,51 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        {currentView === 'login' && (
-          <LoginForm onLogin={handleLogin} />
-        )}
+      <ThemeProvider>
+        <TooltipProvider>
+          {currentView === 'landing' && (
+            <LandingPage 
+              onLogin={() => setCurrentView('login')}
+            />
+          )}
 
-        {currentView === 'user-dashboard' && (
-          <UserDashboard
-            onSubjectClick={handleSubjectClick}
-            onResourcesClick={handleResourcesClick}
-            onLogout={handleLogout}
-          />
-        )}
+          {currentView === 'login' && (
+            <LoginForm 
+              onLogin={handleLogin}
+              onGetKey={() => setCurrentView('landing')}
+              onHome={handleGoHome}
+            />
+          )}
 
-        {currentView === 'chapter-content' && selectedSubject && (
-          <ChapterContent
-            subjectId={selectedSubject.id}
-            subjectName={selectedSubject.name}
-            onBack={handleBackToSubjects}
-          />
-        )}
+          {currentView === 'user-dashboard' && (
+            <UserDashboard
+              onSubjectClick={handleSubjectClick}
+              onResourcesClick={handleResourcesClick}
+              onLogout={handleLogout}
+              onHome={handleGoHome}
+            />
+          )}
 
-        {currentView === 'admin-dashboard' && (
-          <AdminDashboard onLogout={handleLogout} />
-        )}
+          {currentView === 'chapter-content' && selectedSubject && (
+            <ChapterContent
+              subjectId={selectedSubject.id}
+              subjectName={selectedSubject.name}
+              onBack={handleBackToSubjects}
+              onHome={handleGoHome}
+            />
+          )}
 
-        {currentView === 'resources' && (
-          <ResourcesPage onBack={handleBackFromResources} />
-        )}
+          {currentView === 'admin-dashboard' && (
+            <AdminDashboard onLogout={handleLogout} onHome={handleGoHome} />
+          )}
 
-        <Toaster />
-      </TooltipProvider>
+          {currentView === 'resources' && (
+            <ResourcesPage onBack={handleBackFromResources} onHome={handleGoHome} />
+          )}
+
+          <Toaster />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

@@ -6,7 +6,10 @@ import type {
   Chapter, InsertChapter,
   Content, InsertContent,
   QuizQuestion, InsertQuizQuestion,
-  Resource, InsertResource
+  Resource, InsertResource,
+  Plan, InsertPlan,
+  Settings, InsertSettings,
+  Update, InsertUpdate
 } from '@shared/schema';
 
 export interface IStorage {
@@ -46,6 +49,18 @@ export interface IStorage {
   createResource(resource: InsertResource): Resource;
   updateResource(id: string, updates: Partial<InsertResource>): Resource | undefined;
   deleteResource(id: string): boolean;
+  
+  getAllPlans(): Plan[];
+  getPlan(id: string): Plan | undefined;
+  updatePlan(id: string, updates: Partial<InsertPlan>): Plan | undefined;
+  
+  getSettings(): Settings | undefined;
+  updateSettings(updates: InsertSettings): Settings;
+  
+  getAllUpdates(): Update[];
+  getUpdate(id: string): Update | undefined;
+  createUpdate(update: InsertUpdate): Update;
+  deleteUpdate(id: string): boolean;
 }
 
 export class SQLiteStorage implements IStorage {
@@ -323,6 +338,83 @@ export class SQLiteStorage implements IStorage {
 
   deleteResource(id: string): boolean {
     const result = db.prepare('DELETE FROM resources WHERE id = ?').run(id);
+    return result.changes > 0;
+  }
+
+  getAllPlans(): Plan[] {
+    return db.prepare('SELECT * FROM plans ORDER BY durationMonths').all() as Plan[];
+  }
+
+  getPlan(id: string): Plan | undefined {
+    return db.prepare('SELECT * FROM plans WHERE id = ?').get(id) as Plan | undefined;
+  }
+
+  updatePlan(id: string, updates: Partial<InsertPlan>): Plan | undefined {
+    const fields: string[] = [];
+    const values: any[] = [];
+    
+    if (updates.name !== undefined) {
+      fields.push('name = ?');
+      values.push(updates.name);
+    }
+    if (updates.durationMonths !== undefined) {
+      fields.push('durationMonths = ?');
+      values.push(updates.durationMonths);
+    }
+    if (updates.price !== undefined) {
+      fields.push('price = ?');
+      values.push(updates.price);
+    }
+    if (updates.razorpayLink !== undefined) {
+      fields.push('razorpayLink = ?');
+      values.push(updates.razorpayLink);
+    }
+    
+    if (fields.length === 0) return this.getPlan(id);
+    
+    values.push(id);
+    db.prepare(`UPDATE plans SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+    return this.getPlan(id);
+  }
+
+  getSettings(): Settings | undefined {
+    return db.prepare('SELECT * FROM settings LIMIT 1').get() as Settings | undefined;
+  }
+
+  updateSettings(updates: InsertSettings): Settings {
+    const existing = this.getSettings();
+    const now = new Date().toISOString();
+    
+    if (existing) {
+      db.prepare('UPDATE settings SET supportEmail = ?, updatedAt = ? WHERE id = ?')
+        .run(updates.supportEmail, now, existing.id);
+      return this.getSettings()!;
+    } else {
+      const id = randomUUID();
+      db.prepare('INSERT INTO settings (id, supportEmail, updatedAt) VALUES (?, ?, ?)')
+        .run(id, updates.supportEmail, now);
+      return this.getSettings()!;
+    }
+  }
+
+  getAllUpdates(): Update[] {
+    return db.prepare('SELECT * FROM updates ORDER BY createdAt DESC').all() as Update[];
+  }
+
+  getUpdate(id: string): Update | undefined {
+    return db.prepare('SELECT * FROM updates WHERE id = ?').get(id) as Update | undefined;
+  }
+
+  createUpdate(update: InsertUpdate): Update {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    db.prepare('INSERT INTO updates (id, title, content, createdAt) VALUES (?, ?, ?, ?)')
+      .run(id, update.title, update.content, now);
+    return this.getUpdate(id)!;
+  }
+
+  deleteUpdate(id: string): boolean {
+    const result = db.prepare('DELETE FROM updates WHERE id = ?').run(id);
     return result.changes > 0;
   }
 }

@@ -17,7 +17,7 @@ export default function AdminSettings() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: { username: string; currentPassword?: string; newPassword?: string }) => {
-      await apiRequest('PUT', '/api/admin/settings', data);
+      await apiRequest('PUT', '/api/admin/profile', data);
     },
     onSuccess: () => {
       setCurrentPassword("");

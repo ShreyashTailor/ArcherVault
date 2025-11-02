@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Home } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import ChapterItem from "@/components/ChapterItem";
 import VideoPlayer from "@/components/VideoPlayer";
 import PdfViewer from "@/components/PdfViewer";
@@ -17,9 +18,10 @@ interface ChapterContentProps {
   subjectId: string;
   subjectName: string;
   onBack: () => void;
+  onHome?: () => void;
 }
 
-export default function ChapterContent({ subjectId, subjectName, onBack }: ChapterContentProps) {
+export default function ChapterContent({ subjectId, subjectName, onBack, onHome }: ChapterContentProps) {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
 
   const { data: chapters = [] } = useQuery<Chapter[]>({
@@ -67,10 +69,21 @@ export default function ChapterContent({ subjectId, subjectName, onBack }: Chapt
     <div className="min-h-screen bg-background">
       <header className="backdrop-blur-xl bg-white/80 dark:bg-black/40 border-b border-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <Button variant="ghost" onClick={onBack} className="mb-3" data-testid="button-back">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Subjects
-          </Button>
+          <div className="flex items-center justify-between mb-3">
+            <Button variant="ghost" onClick={onBack} data-testid="button-back">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Subjects
+            </Button>
+            <div className="flex items-center gap-2">
+              {onHome && (
+                <Button variant="ghost" onClick={onHome} data-testid="button-home">
+                  <Home className="w-4 h-4 mr-2" />
+                  Home
+                </Button>
+              )}
+              <ThemeToggle />
+            </div>
+          </div>
           <h1 className="text-2xl font-semibold">{subjectName}</h1>
         </div>
       </header>
