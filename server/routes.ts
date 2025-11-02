@@ -78,10 +78,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       secret: process.env.SESSION_SECRET || 'archer-secret-key-change-in-production',
       resave: false,
       saveUninitialized: false,
+      proxy: true, // Required for Render and cloud platforms behind proxies
       cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : false,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
       },
     })
   );

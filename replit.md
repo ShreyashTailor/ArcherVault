@@ -52,15 +52,20 @@ Preferred communication style: Simple, everyday language.
 
 **Session Management**:
 - express-session middleware with cookie-based sessions
-- Session store uses in-memory storage (default)
+- Session store uses in-memory storage (sufficient for single-instance deployments)
 - Sessions include userId and isAdmin flags for authorization
+- **Production Configuration**:
+  - Proxy trust enabled (`app.set('trust proxy', 1)`) for cloud platforms (Render, etc.)
+  - Secure cookies in production with `sameSite: 'lax'` for CSRF protection
+  - Cookie settings: httpOnly, secure (production only), 24-hour expiration
 
 **Middleware Chain**:
-1. JSON body parsing with raw body capture
-2. URL-encoded form parsing
-3. Request logging with timing
-4. Session management
-5. Route handlers with authentication guards
+1. Proxy trust configuration (for cloud deployments)
+2. JSON body parsing with raw body capture
+3. URL-encoded form parsing
+4. Request logging with timing
+5. Session management
+6. Route handlers with authentication guards
 
 **Authentication Guards**:
 - `isAuthenticated`: Verifies session userId exists and user account is valid/not expired
